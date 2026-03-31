@@ -1,17 +1,11 @@
-//
-//  PickleMixApp.swift
-//  PickleMix
-//
-//  Created by Jared Brungard on 2/23/26.
-//
 
 import SwiftUI
-
+// Loads the Format SelectionView as the initial view when the app is loaded
 @main
 struct PickleMixApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            FormatSelectionView()
         }
     }
 }
