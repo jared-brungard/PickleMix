@@ -11,10 +11,6 @@ class GroupsStore {
         load()
     }
 
-    func groups(for format: TournamentFormat) -> [SavedGroup] {
-        groups.filter { $0.format == format }
-    }
-
     func save(group: SavedGroup) {
         groups.append(group)
         persist()
@@ -23,6 +19,13 @@ class GroupsStore {
     func delete(group: SavedGroup) {
         groups.removeAll { $0.id == group.id }
         persist()
+    }
+
+    func update(group: SavedGroup) {
+        if let index = groups.firstIndex(where: { $0.id == group.id }) {
+            groups[index] = group
+            persist()
+        }
     }
 
     private func persist() {

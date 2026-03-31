@@ -6,12 +6,16 @@ struct PlayerEntryView: View {
     let customRounds: Int?
     let keepScores: Bool
 
+    @Environment(GroupsStore.self) private var store
     @State private var names: [String]
     @State private var maleNames: [String]
     @State private var femaleNames: [String]
     @State private var teamNames: [Team]
     @State private var activeManager: TournamentManager? = nil
     @State private var showTournament: Bool = false
+    @State private var showLoadSheet: Bool = false
+    @State private var showSaveAlert: Bool = false
+    @State private var newGroupName: String = ""
 
 
     init(format: TournamentFormat, count: Int, customRounds: Int? = nil, keepScores: Bool = false) {
@@ -40,25 +44,52 @@ struct PlayerEntryView: View {
         }
         .navigationTitle("Entry")
         .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Mix") {
-                        // 1. Create it
-                        let manager = createManager()
-                        // 2. Generate the matches
-                        manager.generateFullTournament()
-                        // 3. Save it to our state so SwiftUI doesn't delete it
-                        activeManager = manager
-                        // 4. Trigger the navigation
-                        showTournament = true
-                    }
-                     .disabled(isMixDisabled)
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button("Load") { showLoadSheet = true }
+                    .disabled(store.groups.isEmpty)
+            }
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button("Save") {
+                    newGroupName = ""
+                    showSaveAlert = true
                 }
             }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Mix") {
+                    // 1. Create it
+                    let manager = createManager()
+                    // 2. Generate the matches
+                    manager.generateFullTournament()
+                    // 3. Save it to our state so SwiftUI doesn't delete it
+                    activeManager = manager
+                    // 4. Trigger the navigation
+                    showTournament = true
+                }
+                .disabled(isMixDisabled)
+            }
+        }
+        .alert("Save to My Groups", isPresented: $showSaveAlert) {
+            TextField("Group name", text: $newGroupName)
+            Button("Save") {
+                let trimmed = newGroupName.trimmingCharacters(in: .whitespaces)
+                guard !trimmed.isEmpty else { return }
+                store.save(group: buildSavedGroup(named: trimmed))
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("Enter a name for this group.")
+        }
+        .sheet(isPresented: $showLoadSheet) {
+            LoadGroupView(store: store) { selectedNames in
+                applySelectedNames(selectedNames)
+                showLoadSheet = false
+            }
+        }
         .navigationDestination(isPresented: $showTournament) {
-                if let manager = activeManager {
-                    TournamentView(manager: manager)
-                }
+            if let manager = activeManager {
+                TournamentView(manager: manager)
             }
+        }
     }
 
     // MARK: - Individuals Layout
@@ -109,6 +140,43 @@ struct PlayerEntryView: View {
             manager.females = self.femaleNames
             return manager
         }
+    private func buildSavedGroup(named name: String) -> SavedGroup {
+        var allNames: [String]
+        switch format {
+        case .individuals:
+            allNames = names
+        case .mixedDoubles:
+            allNames = maleNames + femaleNames
+        case .fixedTeams:
+            allNames = teamNames.flatMap { [$0.player1, $0.player2] }
+        }
+        return SavedGroup(name: name, players: allNames.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty })
+    }
+
+    private func applySelectedNames(_ selected: [String]) {
+        switch format {
+        case .individuals:
+            for i in names.indices {
+                names[i] = i < selected.count ? selected[i] : ""
+            }
+        case .mixedDoubles:
+            // Fill males first, then females
+            for i in maleNames.indices {
+                maleNames[i] = i < selected.count ? selected[i] : ""
+            }
+            let offset = maleNames.count
+            for i in femaleNames.indices {
+                femaleNames[i] = (offset + i) < selected.count ? selected[offset + i] : ""
+            }
+        case .fixedTeams:
+            // Pair names consecutively into teams
+            for i in teamNames.indices {
+                teamNames[i].player1 = (i * 2) < selected.count ? selected[i * 2] : ""
+                teamNames[i].player2 = (i * 2 + 1) < selected.count ? selected[i * 2 + 1] : ""
+            }
+        }
+    }
+
     var isMixDisabled: Bool {
             switch format {
             case .individuals:

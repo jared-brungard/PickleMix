@@ -3,46 +3,62 @@ import SwiftUI
 struct FormatSelectionView: View {
     var body: some View {
         NavigationStack {
-            VStack(spacing: 20) {
-                
-                // Logo Area
+            ScrollView {
+                VStack(spacing: 16) {
 
-                
-                Image("logo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 285, height: 285)
-                    .cornerRadius(25)
-                    .shadow(color: .black.opacity(0.15), radius: 10, x: 0, y: 5)
-                    .padding(.bottom, 10)
+                    // Logo Area
+                    Image("logo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 220, height: 220)
+                        .cornerRadius(25)
+                        .shadow(color: .black.opacity(0.15), radius: 10, x: 0, y: 5)
+                        .padding(.top, 8)
+                        .padding(.bottom, 4)
 
-                Text("Select Tournament Style")
-                    .font(.title2)
-                    .bold()
+                    Text("Select Tournament Style")
+                        .font(.title2)
+                        .bold()
 
-                //Three cards for selecting what game mode
-                FormatCard(
-                    title: "Individuals",
-                    imageName: "indi",
-                    color: .green,
-                    destination: ConfigurationView(format: .individuals)
-                )
+                    // Three cards for selecting what game mode
+                    FormatCard(
+                        title: "Individuals",
+                        imageName: "indi",
+                        color: .green,
+                        destination: ConfigurationView(format: .individuals)
+                    )
 
-                FormatCard(
-                    title: "Fixed Teams",
-                    imageName: "fixed",
-                    color: .blue,
-                    destination: ConfigurationView(format: .fixedTeams)
-                )
+                    FormatCard(
+                        title: "Fixed Teams",
+                        imageName: "fixed",
+                        color: .blue,
+                        destination: ConfigurationView(format: .fixedTeams)
+                    )
 
-                FormatCard(
-                    title: "Mixed Doubles",
-                    imageName: "mixed",
-                    color: .purple,
-                    destination: ConfigurationView(format: .mixedDoubles)
-                )
+                    FormatCard(
+                        title: "Mixed Doubles",
+                        imageName: "mixed",
+                        color: .purple,
+                        destination: ConfigurationView(format: .mixedDoubles)
+                    )
+
+                    NavigationLink(destination: MyGroupsView()) {
+                        HStack(spacing: 10) {
+                            Image(systemName: "person.3.fill")
+                            Text("My Groups")
+                                .fontWeight(.semibold)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.orange.opacity(0.15))
+                        .foregroundColor(.orange)
+                        .cornerRadius(15)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 24)
             }
-            
         }
     }
 }
