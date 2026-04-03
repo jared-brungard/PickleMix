@@ -247,53 +247,77 @@ class TournamentManager {
         rounds = generatedRounds
     }
     private func generateMixedDoublesMix() {
-            var allMales = males.shuffled()
-            var allFemales = females.shuffled()
-            
-            let numRounds = customRoundCount ?? 6
-            
-            // MARK: - Algorithmic Trackers
-            var partnerCounts: [String: [String: Int]] = [:]
+        var allMales   = males.shuffled()
+        var allFemales = females.shuffled()
 
-            // Initialize dictionaries for partner tracking
-            for m in allMales {
-                partnerCounts[m] = [:]
-                for f in allFemales {
-                    partnerCounts[m]![f] = 0
+        let numRounds = customRoundCount ?? 6
+
+        guard allMales.count >= 2 && allFemales.count >= 2 else { return }
+
+        if allMales.count == allFemales.count && allMales.count % 2 == 0 {
+            // Latin Square Rotation
+            // For equal even counts, guarantees every M-F pair partners exactly
+            // once per n rounds. For numRounds > n the cycle repeats uniformly,
+            // so each pair partners numRounds/n or numRounds/n+1 times — maximally fair.
+            let n = allMales.count
+            for r in 0..<numRounds {
+                // Pair male[i] with female[(i + r) % n]
+                var pairs: [(String, String)] = (0..<n).map { i in
+                    (allMales[i], allFemales[(i + r) % n])
                 }
+
+                // Shuffle pairs before grouping so opponents vary across rounds
+                pairs.shuffle()
+
+                var roundMatches: [Match] = []
+                var j = 0
+                while j + 1 < pairs.count {
+                    let (m1, f1) = pairs[j]
+                    let (m2, f2) = pairs[j + 1]
+                    roundMatches.append(Match(team1: [m1, f1], team2: [m2, f2]))
+                    j += 2
+                }
+
+                rounds.append(roundMatches)
+                byes.append([])
             }
 
-            // make sure there are enough men and women to create a match
-            guard allMales.count >= 2 && allFemales.count >= 2 else { return }
+        } else {
+            // Greedy algorithm for unequal counts or odd counts per gender.
+            // A perfect schedule is not achievable in these cases.
+            var partnerCounts: [String: [String: Int]] = [:]
+            for m in allMales {
+                partnerCounts[m] = [:]
+                for f in allFemales { partnerCounts[m]![f] = 0 }
+            }
 
-            // MARK: - Match Generation, forced no byes in this mode
             for _ in 0..<numRounds {
                 allMales.shuffle()
                 allFemales.shuffle()
-                
-                var roundMatches: [Match] = []
-                var unassignedMales = allMales
+
+                var roundMatches:      [Match]  = []
+                var unassignedMales   = allMales
                 var unassignedFemales = allFemales
-                
-                // Greedy Algo for creating pairings
+
                 while unassignedMales.count >= 2 && unassignedFemales.count >= 2 {
                     let m1 = unassignedMales.removeFirst()
                     unassignedFemales.sort { partnerCounts[m1]![$0]! < partnerCounts[m1]![$1]! }
                     let f1 = unassignedFemales.removeFirst()
                     partnerCounts[m1]![f1]! += 1
-                    
+
                     let m2 = unassignedMales.removeFirst()
                     unassignedFemales.sort { partnerCounts[m2]![$0]! < partnerCounts[m2]![$1]! }
                     let f2 = unassignedFemales.removeFirst()
                     partnerCounts[m2]![f2]! += 1
-                    
+
                     roundMatches.append(Match(team1: [m1, f1], team2: [m2, f2]))
                 }
-                
+
                 rounds.append(roundMatches)
                 byes.append([])
             }
         }
+    }
 
    
 }
