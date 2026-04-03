@@ -4,69 +4,84 @@ struct FormatSelectionView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 16) {
+                VStack(spacing: 0) {
 
-                    // Logo Area
-                    Image("logo")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 220, height: 220)
-                        .cornerRadius(25)
-                        .shadow(color: .black.opacity(0.15), radius: 10, x: 0, y: 5)
-                        .padding(.top, 8)
-                        .padding(.bottom, 4)
+                    // MARK: - Hero Header
+                    ZStack {
+                        LinearGradient(
+                            colors: [Color.green, Color.teal],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
 
-                    Text("Select Tournament Style")
-                        .font(.title2)
-                        .bold()
+                        VStack(spacing: 10) {
+                            Image("logo")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 100, height: 100)
+                                .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                                .shadow(color: .black.opacity(0.25), radius: 10, x: 0, y: 6)
 
-                    // Three cards for selecting what game mode
-                    FormatCard(
-                        title: "Individuals",
-                        imageName: "indi",
-                        color: .green,
-                        destination: ConfigurationView(format: .individuals)
-                    )
+                            Text("PickleMix")
+                                .font(.system(size: 36, weight: .heavy, design: .rounded))
+                                .foregroundColor(.white)
 
-                    FormatCard(
-                        title: "Fixed Teams",
-                        imageName: "fixed",
-                        color: .blue,
-                        destination: ConfigurationView(format: .fixedTeams)
-                    )
-
-                    FormatCard(
-                        title: "Mixed Doubles",
-                        imageName: "mixed",
-                        color: .purple,
-                        destination: ConfigurationView(format: .mixedDoubles)
-                    )
-
-                    NavigationLink(destination: MyGroupsView()) {
-                        HStack(spacing: 10) {
-                            Image(systemName: "person.3.fill")
-                            Text("My Groups")
-                                .fontWeight(.semibold)
+                            Text("Select a game format to get started")
+                                .font(.subheadline)
+                                .foregroundColor(.white.opacity(0.85))
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.orange.opacity(0.15))
-                        .foregroundColor(.orange)
-                        .cornerRadius(15)
+                        .padding(.vertical, 36)
                     }
-                    .buttonStyle(.plain)
+
+                    // MARK: - Format Cards
+                    VStack(spacing: 14) {
+                        FormatCard(
+                            title: "Individuals",
+                            subtitle: "Partners rotate each round",
+                            systemImage: "person.2.fill",
+                            color: .green,
+                            destination: ConfigurationView(format: .individuals)
+                        )
+
+                        FormatCard(
+                            title: "Fixed Teams",
+                            subtitle: "Same partner all session",
+                            systemImage: "person.2.circle.fill",
+                            color: .blue,
+                            destination: ConfigurationView(format: .fixedTeams)
+                        )
+
+                        FormatCard(
+                            title: "Mixed Doubles",
+                            subtitle: "Balanced men & women pairings",
+                            systemImage: "figure.mixed.cardio",
+                            color: .purple,
+                            destination: ConfigurationView(format: .mixedDoubles)
+                        )
+
+                        FormatCard(
+                            title: "My Groups",
+                            subtitle: "Manage your saved player groups",
+                            systemImage: "person.3.fill",
+                            color: .orange,
+                            destination: MyGroupsView()
+                        )
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 24)
+                    .padding(.bottom, 32)
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 24)
             }
+            .ignoresSafeArea(edges: .top)
         }
     }
 }
 
-// creates format of the cards
+// MARK: - Format Card
 struct FormatCard<Destination: View>: View {
     let title: String
-    let imageName: String
+    let subtitle: String
+    let systemImage: String
     let color: Color
     let destination: Destination
 
@@ -74,28 +89,38 @@ struct FormatCard<Destination: View>: View {
         NavigationLink(destination: destination) {
             HStack(spacing: 16) {
 
-                Image(imageName)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 100, height: 80)
-                    .padding(8)
-                    .background(color.opacity(0.15))
-                    .cornerRadius(12)
-                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                    .shadow(color: .black.opacity(0.15), radius: 5, x: 0, y: 3)
+                // Icon bubble
+                ZStack {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(color.gradient)
+                        .frame(width: 60, height: 60)
 
-                Text(title)
-                    .font(.headline)
-                    .foregroundColor(.primary)
+                    Image(systemName: systemImage)
+                        .font(.system(size: 26, weight: .semibold))
+                        .foregroundColor(.white)
+                }
+                .shadow(color: color.opacity(0.4), radius: 6, x: 0, y: 4)
+
+                // Text
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    Text(subtitle)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
 
                 Spacer()
 
                 Image(systemName: "chevron.right")
-                    .foregroundColor(.secondary)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.secondary.opacity(0.6))
             }
-            .padding()
-            .background(Color(.secondarySystemBackground))
-            .cornerRadius(15)
+            .padding(16)
+            .background(.background)
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .shadow(color: .black.opacity(0.07), radius: 10, x: 0, y: 4)
         }
         .buttonStyle(.plain)
     }

@@ -86,17 +86,71 @@ class TournamentManager {
 
         allPlayers.shuffle()
         let totalPlayers = allPlayers.count
-        guard totalPlayers >= 4 else { return }   // you need at least 4 to make a match
+        guard totalPlayers >= 4 else { return }
 
-       
-            // If custom isn't set, default to a mathematical standard for round-robin
-            let numRounds = customRoundCount ?? (totalPlayers % 2 == 0 ? totalPlayers - 1 : totalPlayers)
+        let numRounds = customRoundCount ?? (totalPlayers % 2 == 0 ? totalPlayers - 1 : totalPlayers)
 
-            // Tracker for analyzing partner/game history
-            var gamesPlayed: [String: Int] = [:]
+        if totalPlayers % 4 == 0 || totalPlayers % 4 == 1 {
+            // Round-Robin 1-Factorization
+            // Guarantees every pair partners exactly once.
+            //
+            // For n % 4 == 1 (5, 9, 13…): a ghost "__BYE__" player is added to
+            // make the count even. Whoever is paired with the ghost sits out that
+            // round. The ghost rotates through every position, so byes are
+            // distributed one-per-player and every real pair still partners once.
+
+            let ghost = "__BYE__"
+            var working = allPlayers
+            if totalPlayers % 4 == 1 { working.append(ghost) }
+
+            let m = working.count          // even
+            let fixed  = working[m - 1]   // anchor — never moves
+            var rotating = Array(working.dropLast())   // m-1 players that rotate
+
+            for _ in 0..<(m - 1) {
+                // Build pairs: anchor with rotating[0], then symmetric pairs
+                var pairs: [(String, String)] = [(fixed, rotating[0])]
+                for i in 1..<(m / 2) {
+                    pairs.append((rotating[i], rotating[m - 1 - i]))
+                }
+
+                // Separate ghost pairings (byes) from real matchups
+                var activePairs: [(String, String)] = []
+                var roundByes: [String] = []
+                for (a, b) in pairs {
+                    if a == ghost { roundByes.append(b) }
+                    else if b == ghost { roundByes.append(a) }
+                    else { activePairs.append((a, b)) }
+                }
+
+                // Shuffle pairs before grouping so opponents vary across rounds
+                activePairs.shuffle()
+
+                // Group consecutive pairs into courts: pair[0]+pair[1] → court 1, etc.
+                var roundMatches: [Match] = []
+                var i = 0
+                while i + 1 < activePairs.count {
+                    let (p1, p2) = activePairs[i]
+                    let (p3, p4) = activePairs[i + 1]
+                    roundMatches.append(Match(team1: [p1, p2], team2: [p3, p4]))
+                    i += 2
+                }
+
+                rounds.append(roundMatches)
+                byes.append(roundByes)
+
+                // Rotate: move last element of rotating list to the front
+                let last = rotating.removeLast()
+                rotating.insert(last, at: 0)
+            }
+
+        } else {
+            // Greedy algorithm for counts where a perfect schedule is impossible
+            // (n % 4 == 2 or n % 4 == 3). Minimises repeat partnerships.
+
+            var gamesPlayed:  [String: Int]          = [:]
             var partnerCounts: [String: [String: Int]] = [:]
 
-            // Initialize dictionaries for every player
             for p in allPlayers {
                 gamesPlayed[p] = 0
                 partnerCounts[p] = [:]
@@ -105,51 +159,35 @@ class TournamentManager {
                 }
             }
 
-            
             for _ in 0..<numRounds {
-                //Ensure nobody has extra byes than what is fair
+                // Prioritise players with the fewest games so byes stay fair
                 allPlayers.shuffle()
                 allPlayers.sort { gamesPlayed[$0]! < gamesPlayed[$1]! }
 
-                //Figures out how many courts will be filled
                 let maxPlayers = (totalPlayers / 4) * 4
                 guard maxPlayers >= 4 else { break }
 
-                // Array of players assigned to matches in the round
                 let activePlayers = Array(allPlayers.prefix(maxPlayers))
-                
-                // Array of players that will sit out and have byes
-                let sittingOut = Array(allPlayers.dropFirst(maxPlayers))
+                let sittingOut    = Array(allPlayers.dropFirst(maxPlayers))
 
-                // Everybody that gets into a match adds a game played
-                for p in activePlayers {
-                    gamesPlayed[p]! += 1
-                }
+                for p in activePlayers { gamesPlayed[p]! += 1 }
 
                 var roundMatches: [Match] = []
                 var unassigned = activePlayers
 
-                // Greedy Algo for assigning partners
                 while unassigned.count >= 4 {
-    
                     let p1 = unassigned.removeFirst()
-
                     unassigned.sort { partnerCounts[p1]![$0]! < partnerCounts[p1]![$1]! }
                     let p2 = unassigned.removeFirst()
-
-                    // Update their partnership history after they are matched
                     partnerCounts[p1]![p2]! += 1
                     partnerCounts[p2]![p1]! += 1
 
-                    // Form the opposing team using the same logic
                     let p3 = unassigned.removeFirst()
                     unassigned.sort { partnerCounts[p3]![$0]! < partnerCounts[p3]![$1]! }
                     let p4 = unassigned.removeFirst()
-
                     partnerCounts[p3]![p4]! += 1
                     partnerCounts[p4]![p3]! += 1
 
-                    // Create the match
                     roundMatches.append(Match(team1: [p1, p2], team2: [p3, p4]))
                 }
 
@@ -157,6 +195,7 @@ class TournamentManager {
                 byes.append(sittingOut)
             }
         }
+    }
 
     private func generateFixedTeamMix() {
         rounds.removeAll()
